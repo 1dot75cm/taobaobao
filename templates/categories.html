@@ -7,8 +7,8 @@
       <a href={{ url_for('get_goods', catid=cat.catid, page=1) }}>{{ cat.name }}</a> -
     </div>
     <div class="col-xs-9">
-{% for subcat in subcates[cat.catid] %}
-      <a href={{ url_for('get_goods', catid=subcat.catid, page=1) }}>{{ subcat.name }}</a>,
+{% for sub in cat.subs %}
+      <a href={{ url_for('get_goods', catid=sub.catid, page=1) }}>{{ sub.name }}</a>,
 {% endfor %}
     </div>
 {% else %}

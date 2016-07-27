@@ -35,28 +35,18 @@ def index():
 @app.route('/categories', methods=['GET'])
 def categories():
     if request.method == 'GET':
-        subcates = {}
-        cates = cate_coll.group(
-                    key={'categories.1.catid': 1, 'categories.1.name': 1},
-                    condition={},
-                    initial={'count': 0},
-                    reduce='function(obj, prev){ prev.count++; }',
-                    finalize='''
-                        function(prev) {
-                            prev.name = prev['categories.1.name'];
-                            prev.catid = prev['categories.1.catid'];
-                            delete prev.count;
-                            delete prev['categories.1.name'];
-                            delete prev['categories.1.catid'];
-                        }'''
-                )
-        for cat in cates:
-            f = set()
-            subs = cate_coll.find({'categories.1.catid': cat['catid']},
-                {'_id': 0, 'categories': {'$slice': [2,1]} })
-            [f.add(json.dumps(i['categories'][0])) for i in subs]
-            subcates.update({cat['catid']: [json.loads(i) for i in f]})
-        return render_template('categories.html', cates=cates, subcates=subcates)
+        cates = cate_coll.aggregate([
+            {'$project': {'_id': 0,
+                          'id': {'$slice': ['$categories.catid',1,1]},
+                          'name': {'$slice': ['$categories.name',1,1]},
+                          'sub': {'$slice': ['$categories',2,1]}}},
+            {'$unwind': '$id'}, {'$unwind': '$name'}, {'$unwind': '$sub'},
+            {'$group': {'_id': '$id',
+                        'catid': {'$first': '$id'},
+                        'name': {'$first': '$name'},
+                        'subs': {'$addToSet': '$sub'}}}
+        ])
+        return render_template('categories.html', cates=cates)
 
 @app.route('/search', methods=['GET'])
 @app.route('/search/<item>', methods=['GET'])
